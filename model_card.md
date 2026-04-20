@@ -15,78 +15,44 @@ Fill this out after you run BugHound in **both** modes (Heuristic and Gemini).
 
 ## 2) How does it work?
 
-Describe the workflow in your own words (plan → analyze → act → test → reflect).  
-Include what is done by heuristics vs what is done by Gemini (if enabled).
+5 steps: plan, analyze, act, test, reflect. Heuristics or Gemini find issues, a fix gets proposed, the risk assessor scores it, and the agent decides auto-fix or human review.
 
 ---
 
 ## 3) Inputs and outputs
 
-**Inputs:**
-
-- What kind of code snippets did you try?
-- What was the “shape” of the input (short scripts, functions, try/except blocks, etc.)?
-
-**Outputs:**
-
-- What types of issues were detected?
-- What kinds of fixes were proposed?
-- What did the risk report show?
+Tested short functions with try/except, prints, and TODOs. Detected bare excepts, print statements, and TODOs. Fixes swapped print for logging.info and tightened exception handling. Risk report gives a score, level, and should_autofix.
 
 ---
 
 ## 4) Reliability and safety rules
 
-List at least **two** reliability rules currently used in `assess_risk`. For each:
+Rule 1 - New imports: flags when the fix adds import lines. New deps can fail or cause side effects. FP: safe stdlib import gets flagged. FN: misses swapping one import for another.
 
-- What does the rule check?
-- Why might that check matter for safety or correctness?
-- What is a false positive this rule could cause?
-- What is a false negative this rule could miss?
+Rule 2 - Return removed: flags when original had return but fix does not. Dropping a return silently changes output to None. FP: “return” in a comment triggers it. FN: misses when return value just changes.
 
 ---
 
 ## 5) Observed failure modes
 
-Provide at least **two** examples:
+1. LLM returned an empty issues list for a file with a bare except and TODO, so the agent skipped the fix and said nothing was wrong.
 
-1. A time BugHound missed an issue it should have caught  
-2. A time BugHound suggested a fix that felt risky, wrong, or unnecessary  
-
-For each, include the snippet (or describe it) and what went wrong.
+2. A print-only file got should_autofix True even though the fix added import logging, which is a real behavioral change worth reviewing.
 
 ---
 
 ## 6) Heuristic vs Gemini comparison
 
-Compare behavior across the two modes:
-
-- What did Gemini detect that heuristics did not?
-- What did heuristics catch consistently?
-- How did the proposed fixes differ?
-- Did the risk scorer agree with your intuition?
+Only tested heuristic mode. Heuristics caught bare except, prints, and TODOs reliably. Gemini would likely catch subtler things like logic errors. Risk scorer works the same either way since it only looks at fix structure.
 
 ---
 
 ## 7) Human-in-the-loop decision
 
-Describe one scenario where BugHound should **refuse** to auto-fix and require human review.
-
-- What trigger would you add?
-- Where would you implement it (risk_assessor vs agent workflow vs UI)?
-- What message should the tool show the user?
+If the fix adds a new import, block autofix and require human review. Trigger lives in the risk assessor. Message: “This fix adds a new import. Please review before applying.”
 
 ---
 
 ## 8) Improvement idea
 
-Propose one improvement that would make BugHound more reliable *without* making it dramatically more complex.
-
-Examples:
-
-- A better output format and parsing strategy
-- A new guardrail rule + test
-- A more careful “minimal diff” policy
-- Better detection of changes that alter behavior
-
-Write your idea clearly and briefly.
+The print check is a substring match so it fires on strings and comments containing “print(“ by accident. Using Python's ast module instead would catch only real calls, no new dependencies needed.

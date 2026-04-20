@@ -70,7 +70,8 @@ def assess_risk(
         1 for l in fixed_lines
         if l.strip().startswith("import ") or l.strip().startswith("from ")
     )
-    if fixed_import_count > original_import_count:
+    introduces_new_imports = fixed_import_count > original_import_count
+    if introduces_new_imports:
         score -= 10
         reasons.append("Fix introduces new imports.")
 
@@ -92,7 +93,7 @@ def assess_risk(
     # ----------------------------
     # Auto-fix policy
     # ----------------------------
-    should_autofix = level == "low"
+    should_autofix = level == "low" and not introduces_new_imports
 
     if not reasons:
         reasons.append("No significant risks detected.")
