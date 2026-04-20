@@ -82,6 +82,10 @@ class BugHoundAgent:
             self._log("ANALYZE", "LLM output was not parseable JSON. Falling back to heuristics.")
             return self._heuristic_analyze(code_snippet)
 
+        if not issues:
+            self._log("ANALYZE", "LLM returned no issues. Verifying with heuristics.")
+            return self._heuristic_analyze(code_snippet)
+
         return issues
 
     def propose_fix(self, code_snippet: str, issues: List[Dict[str, str]]) -> str:

@@ -62,6 +62,18 @@ def assess_risk(
         score -= 5
         reasons.append("Bare except was modified, verify correctness.")
 
+    original_import_count = sum(
+        1 for l in original_lines
+        if l.strip().startswith("import ") or l.strip().startswith("from ")
+    )
+    fixed_import_count = sum(
+        1 for l in fixed_lines
+        if l.strip().startswith("import ") or l.strip().startswith("from ")
+    )
+    if fixed_import_count > original_import_count:
+        score -= 10
+        reasons.append("Fix introduces new imports.")
+
     # ----------------------------
     # Clamp score
     # ----------------------------
